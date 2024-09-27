@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Language.Javascript.JSaddle.Wasm (run) where
 
 import Control.Concurrent.Async qualified as Async
@@ -9,12 +11,15 @@ import Data.ByteString.Internal qualified as BI
 import Data.ByteString.Lazy.Char8 qualified as BLC8
 import Data.ByteString.Unsafe qualified as BU
 import Foreign.Ptr (Ptr)
+#ifdef wasi_HOST_OS
 import GHC.Wasm.Prim (JSString, JSVal)
 import GHC.Wasm.Prim qualified
+#endif
 import Language.Javascript.JSaddle.Run (runJavaScript)
 import Language.Javascript.JSaddle.Run.Files qualified as JSaddle.Files
 import Language.Javascript.JSaddle.Types (Batch, JSM)
 
+#ifdef wasi_HOST_OS
 run :: JSM () -> IO ()
 run entryPoint = do
   -- TODO rather use a bounded (even size 1) queue?
@@ -87,3 +92,8 @@ foreign import javascript unsafe "(new TextDecoder('utf-8', {fatal: true})).deco
 byteStringToJSString :: ByteString -> IO JSString
 byteStringToJSString bs =
   BU.unsafeUseAsCStringLen bs $ uncurry js_toJSString
+
+#else
+run :: JSM () -> IO ()
+run entryPoint = pure ()
+#endif
